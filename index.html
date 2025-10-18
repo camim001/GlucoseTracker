@@ -1,81 +1,205 @@
-<!DOCTYPE html>
-<html>
+﻿<!DOCTYPE html>
+<html lang="en">
 <head>
-  <title>Glucose Tracker</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glucose Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial;
+            margin: 20px;
+        }
+
+        form, table {
+            width: 100%;
+            max-width: 600px;
+            margin: auto;
+        }
+
+        input, button {
+            margin: 5px;
+            padding: 10px;
+            width: 100%;
+        }
+
+        canvas {
+            max-width: 100%;
+        }
+    </style>
 </head>
 <body>
-  <h1>Glucose Tracker</h1>
-  <form id="glucoseForm">
-    <input type="date" id="date" required>
-    <input type="time" id="time" required>
-    <input type="number" id="glucose" placeholder="Glucose (mg/dL)" required>
-    <input type="text" id="notes" placeholder="Notes">
-    <button type="submit">Add Reading</button>
-  </form>
+    <h1>Glucose Tracker</h1>
+    <form id="glucoseForm">
+        <input type="date" id="date" required>
+        <input type="time" id="time" required>
+        <input type="number" step="0.1" id="glucose" placeholder="Glucose (mmol)" required>
+        <input type="text" id="comments" placeholder="Comments">
+        <button type="submit">Add Reading</button>
+    </form>
 
-  <table border="1" id="dataTable">
-    <thead>
-      <tr><th>Date</th><th>Time</th><th>Glucose</th><th>Notes</th></tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+    <table border="1" id="dataTable">
+        <thead><tr><th>Date</th><th>Time</th><th>Glucose</th><th>Comments</th></tr></thead>
+        <tbody></tbody>
+    </table>
 
-  <button id="saveDrive">Save to Google Drive</button>
+    <h2>Glucose Trend</h2>
+    <canvas id="glucoseChart"></canvas>
 
-  <script src="https://apis.google.com/js/api  <script>
-    const CLIENT_ID = '1000282459891-2sl7ko8v1fke8ekta2f0av634cguqpih.apps.googleusercontent.com';
-    const API_KEY = 'YOUR_API_KEY';
-    const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+    <button id="saveDrive">Save to Google Drive</button>
 
-    let readings = [];
+    https://apis.google.com/js/api.js</script>
+    <script>
+const CLIENT_ID = '<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Glucose Tracker</title>
+https://cdn.jsdelivr.net/npm/chart.js</script>
+<style>
+  body { font-family: Arial; margin: 20px; }
+  form, table { width: 100%; max-width: 600px; margin: auto; }
+  input, button { margin: 5px; padding: 10px; width: 100%; }
+  canvas { max-width: 100%; }
+</style>
+</head>
+<body>
+<h1>Glucose Tracker</h1>
+<form id="glucoseForm">
+  <input type="date" id="date" required>
+  <input type="time" id="time" required>
+  <input type="number" step="0.1" id="glucose" placeholder="Glucose (mmol)" required>
+  <input type="text" id="comments" placeholder="Comments">
+  <button type="submit">Add Reading</button>
+</form>
 
-    document.getElementById('glucoseForm').addEventListener('submit', e => {
-      e.preventDefault();
-      const date = document.getElementById('date').value;
-      const time = document.getElementById('time').value;
-      const glucose = document.getElementById('glucose').value;
-      const notes = document.getElementById('notes').value;
+<table border="1" id="dataTable">
+<thead><tr><th>Date</th><th>Time</th><th>Glucose</th><th>Comments</th></tr></thead>
+<tbody></tbody>
+</table>
 
-      readings.push({ date, time, glucose, notes });
-      updateTable();
+<h2>Glucose Trend</h2>
+<canvas id="glucoseChart"></canvas>
+
+<button id="saveDrive">Save to Google Drive</button>
+
+https://apis.google.com/js/api.js</script>
+<script>
+const CLIENT_ID = '774449140663-d7ufgeqonjvmph6dliijgrv2mf0n5jc3.apps.googleusercontent.com';
+const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+let readings = [], chart;
+
+document.getElementById('glucoseForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const date = document.getElementById('date').value;
+  const time = document.getElementById('time').value;
+  const glucose = document.getElementById('glucose').value;
+  const comments = document.getElementById('comments').value;
+  readings.push({ date, time, glucose, comments });
+  updateTable(); updateChart();
+});
+
+function updateTable() {
+  const tbody = document.querySelector('#dataTable tbody');
+  tbody.innerHTML = '';
+  readings.forEach(r => {
+    tbody.innerHTML += `<tr><td>${r.date}</td><td>${r.time}</td><td>${r.glucose}</td><td>${r.comments}</td></tr>`;
+  });
+}
+
+function updateChart() {
+  const labels = readings.map(r => `${r.date} ${r.time}`);
+  const data = readings.map(r => parseFloat(r.glucose));
+  if (chart) chart.destroy();
+  chart = new Chart(document.getElementById('glucoseChart'), {
+    type: 'line',
+    data: { labels, datasets: [{ label: 'Glucose (mmol)', data, borderColor: 'blue', fill: false }] }
+  });
+}
+
+function exportCSV() {
+  let csv = 'Date,Time,Glucose,Comments\n';
+  readings.forEach(r => csv += `${r.date},${r.time},${r.glucose},${r.comments}\n`);
+  return new Blob([csv], { type: 'text/csv' });
+}
+
+document.getElementById('saveDrive').addEventListener('click', () => {
+  gapi.load('client:auth2', () => {
+    gapi.client.init({ clientId: CLIENT_ID, scope: SCOPES }).then(() => {
+      gapi.auth2.getAuthInstance().signIn().then(() => {
+        const fileContent = exportCSV();
+        const metadata = { name: 'glucose_readings.csv', mimeType: 'text/csv' };
+        const form = new FormData();
+        form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+        form.append('file', fileContent);
+        fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+          method: 'POST',
+          headers: new Headers({ 'Authorization': 'Bearer ' + gapi.auth.getToken().access_token }),
+          body: form
+        }).then(res => res.json()).then(() => alert('File saved to Google Drive!'));
+      });
     });
+  });
+});
+</script>
+</body>
+</html>';
+const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+let readings = [], chart;
 
-    function updateTable() {
-      const tbody = document.querySelector('#dataTable tbody');
-      tbody.innerHTML = '';
-      readings.forEach(r => {
-        const row = `<tr><td>${r.date}</td><td>${r.time}</td><td>${r.glucose}</td><td>${r.notes}</td></tr>`;
-        tbody.innerHTML += row;
-      });
-    }
+document.getElementById('glucoseForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const date = document.getElementById('date').value;
+  const time = document.getElementById('time').value;
+  const glucose = document.getElementById('glucose').value;
+  const comments = document.getElementById('comments').value;
+  readings.push({ date, time, glucose, comments });
+  updateTable(); updateChart();
+});
 
-    function exportCSV() {
-      let csv = 'Date,Time,Glucose,Notes\n';
-      readings.forEach(r => {
-        csv += `${r.date},${r.time},${r.glucose},${r.notes}\n`;
-      });
-      return new Blob([csv], { type: 'text/csv' });
-    }
+function updateTable() {
+  const tbody = document.querySelector('#dataTable tbody');
+  tbody.innerHTML = '';
+  readings.forEach(r => {
+    tbody.innerHTML += `<tr><td>${r.date}</td><td>${r.time}</td><td>${r.glucose}</td><td>${r.comments}</td></tr>`;
+  });
+}
 
-    document.getElementById('saveDrive').addEventListener('click', () => {
-      gapi.load('client:auth2', () => {
-        gapi.client.init({ apiKey: API_KEY, clientId: CLIENT_ID, scope: SCOPES }).then(() => {
-          gapi.auth2.getAuthInstance().signIn().then(() => {
-            const fileContent = exportCSV();
-            const metadata = { name: 'glucose_readings.csv', mimeType: 'text/csv' };
-            const form = new FormData();
-            form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-            form.append('file', fileContent);
+function updateChart() {
+  const labels = readings.map(r => `${r.date} ${r.time}`);
+  const data = readings.map(r => parseFloat(r.glucose));
+  if (chart) chart.destroy();
+  chart = new Chart(document.getElementById('glucoseChart'), {
+    type: 'line',
+    data: { labels, datasets: [{ label: 'Glucose (mmol)', data, borderColor: 'blue', fill: false }] }
+  });
+}
 
-            fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-              method: 'POST',
-              headers: new Headers({ 'Authorization': 'Bearer ' + gapi.auth.getToken().access_token }),
-              body: form
-            }).then(res => res.json()).then(data => alert('File saved to Google Drive!'));
-          });
-        });
+function exportCSV() {
+  let csv = 'Date,Time,Glucose,Comments\n';
+  readings.forEach(r => csv += `${r.date},${r.time},${r.glucose},${r.comments}\n`);
+  return new Blob([csv], { type: 'text/csv' });
+}
+
+document.getElementById('saveDrive').addEventListener('click', () => {
+  gapi.load('client:auth2', () => {
+    gapi.client.init({ clientId: CLIENT_ID, scope: SCOPES }).then(() => {
+      gapi.auth2.getAuthInstance().signIn().then(() => {
+        const fileContent = exportCSV();
+        const metadata = { name: 'glucose_readings.csv', mimeType: 'text/csv' };
+        const form = new FormData();
+        form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+        form.append('file', fileContent);
+        fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+          method: 'POST',
+          headers: new Headers({ 'Authorization': 'Bearer ' + gapi.auth.getToken().access_token }),
+          body: form
+        }).then(res => res.json()).then(() => alert('File saved to Google Drive!'));
       });
     });
-  </script>
+  });
+});
+    </script>
 </body>
 </html>
