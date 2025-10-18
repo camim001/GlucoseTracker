@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Glucose Tracker</title>
+</head>
+<body>
+  <h1>Glucose Tracker</h1>
+  <form id="glucoseForm">
+    <input type="date" id="date" required>
+    <input type="time" id="time" required>
+    <input type="number" id="glucose" placeholder="Glucose (mg/dL)" required>
+    <input type="text" id="notes" placeholder="Notes">
+    <button type="submit">Add Reading</button>
+  </form>
+
+  <table border="1" id="dataTable">
+    <thead>
+      <tr><th>Date</th><th>Time</th><th>Glucose</th><th>Notes</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <button id="saveDrive">Save to Google Drive</button>
+
+  <script src="https://apis.google.com/js/api  <script>
+    const CLIENT_ID = '1000282459891-2sl7ko8v1fke8ekta2f0av634cguqpih.apps.googleusercontent.com';
+    const API_KEY = 'YOUR_API_KEY';
+    const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+
+    let readings = [];
+
+    document.getElementById('glucoseForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const date = document.getElementById('date').value;
+      const time = document.getElementById('time').value;
+      const glucose = document.getElementById('glucose').value;
+      const notes = document.getElementById('notes').value;
+
+      readings.push({ date, time, glucose, notes });
+      updateTable();
+    });
+
+    function updateTable() {
+      const tbody = document.querySelector('#dataTable tbody');
+      tbody.innerHTML = '';
+      readings.forEach(r => {
+        const row = `<tr><td>${r.date}</td><td>${r.time}</td><td>${r.glucose}</td><td>${r.notes}</td></tr>`;
+        tbody.innerHTML += row;
+      });
+    }
+
+    function exportCSV() {
+      let csv = 'Date,Time,Glucose,Notes\n';
+      readings.forEach(r => {
+        csv += `${r.date},${r.time},${r.glucose},${r.notes}\n`;
+      });
+      return new Blob([csv], { type: 'text/csv' });
+    }
+
+    document.getElementById('saveDrive').addEventListener('click', () => {
+      gapi.load('client:auth2', () => {
+        gapi.client.init({ apiKey: API_KEY, clientId: CLIENT_ID, scope: SCOPES }).then(() => {
+          gapi.auth2.getAuthInstance().signIn().then(() => {
+            const fileContent = exportCSV();
+            const metadata = { name: 'glucose_readings.csv', mimeType: 'text/csv' };
+            const form = new FormData();
+            form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+            form.append('file', fileContent);
+
+            fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+              method: 'POST',
+              headers: new Headers({ 'Authorization': 'Bearer ' + gapi.auth.getToken().access_token }),
+              body: form
+            }).then(res => res.json()).then(data => alert('File saved to Google Drive!'));
+          });
+        });
+      });
+    });
+  </script>
+</body>
+</html>
